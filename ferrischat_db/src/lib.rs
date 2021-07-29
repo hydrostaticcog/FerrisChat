@@ -1,7 +1,7 @@
 #![feature(once_cell)]
 
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
-use sqlx::{PgPool, Pool, Postgres};
+use sqlx::{PgPool, Pool, Postgres, query};
 use std::lazy::SyncOnceCell as OnceCell;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -22,11 +22,67 @@ pub async fn load_db() -> Pool<Postgres> {
                 .statement_cache_capacity(1_048_576_usize),
         )
         .await
-        .expect("failed to connect to the database");
+        .expect("Couldn't connect to DB");
+
+    query!(
+        "CREATE TABLE IF NOT EXISTS users (
+        id BIGINT PRIMARY KEY,
+        name varchar(100),
+        guilds BIGINT
+    );",
+    )
+        .execute(&db)
+        .await
+        .expect("Failed to create the user table!");
+
+    query!(
+        "CREATE TABLE IF NOT EXISTS guilds (
+        id BIGINT PRIMARY KEY,
+        owner_id BIGINT references users,
+        name varchar(100),
+        channels BIGINT,
+        users BIGINT
+    );",
+    )
+        .execute(&db)
+        .await
+        .expect("Failed to create the guild table!");
+
+    query!(
+        "CREATE TABLE IF NOT EXISTS channels (
+        id BIGINT PRIMARY KEY,
+        name varchar(100)
+    );",
+    )
+        .execute(&db)
+        .await
+        .expect("Failed to create the channels table!");
+
+    query!(
+        "CREATE TABLE IF NOT EXISTS members (
+        user_id BIGINT references users,
+        guild_id BIGINT references guilds
+    );",
+    )
+        .execute(&db)
+        .await
+        .expect("Failed to create the members table!");
+
+    query!(
+        "CREATE TABLE IF NOT EXISTS messages (
+        id BIGINT PRIMARY KEY,
+        content varchar(100),
+        channel BIGINT references channels,
+        reactions BIGINT
+    );",
+    )
+        .execute(&db)
+        .await
+        .expect("Failed to create the messages table!.");
 
     DATABASE_POOL
         .set(db.clone())
-        .expect("failed to set the DB global: did you call load_db() twice?");
+        .expect("Pool was already set, don't call `load_db` more than once!");
 
     db
 }

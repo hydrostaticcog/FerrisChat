@@ -14,3 +14,8 @@ Look at the issue thread and make sure no one's claimed it yet. If no one has, g
 ahead and write a comment saying you're claiming it.
 
 You must run `rustfmt` **with default settings** on a PR for it to be merged.
+
+## Running the server
+
+A PostgreSQL url must be included in the build command. For example: 
+`DATABASE_URL="postgres://ferris_chat:ferris_chat@localhost/ferris_chat"`
